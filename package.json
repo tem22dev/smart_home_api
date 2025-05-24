@@ -1,10 +1,13 @@
 {
   "name": "smart_home_api",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Khoá luận tốt nghiệp 2025 - API",
+  "author": "TEm",
   "private": true,
-  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.14.0",
+    "yarn": ">=1.22.0"
+  },
   "scripts": {
     "start": "node dist/main",
     "start:dev": "nest start --watch",
