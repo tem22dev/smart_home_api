@@ -1,10 +1,36 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { Connection } from 'mongoose';
+import { softDeletePlugin } from 'soft-delete-plugin-mongoose';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    // Import MongooseModule with async configuration
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI') || 'mongodb://localhost:27017/mydatabase',
+        connectionFactory: (connection: Connection) => {
+          connection.plugin(softDeletePlugin);
+          return connection;
+        },
+      }),
+      inject: [ConfigService],
+    }),
+
+    // Static folder
+    ServeStaticModule.forRoot({
+      rootPath: `${__dirname}/../../public`,
+      renderPath: '/',
+    }),
+
+    // Makes the configuration available globally
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+  ],
+  providers: [],
 })
 export class AppModule {}
