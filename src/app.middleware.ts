@@ -1,0 +1,21 @@
+import type { INestApplication } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import compression from 'compression';
+import helmet from 'helmet';
+
+export function middleware(app: INestApplication): INestApplication {
+  const configService = app.get(ConfigService);
+  const isProduction = configService.get<string>('NODE_ENV') === 'production';
+
+  //   app.use(compression());
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProduction ? undefined : false,
+      crossOriginEmbedderPolicy: isProduction ? undefined : false,
+    }),
+  );
+  // app.enableCors();
+
+  return app;
+}

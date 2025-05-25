@@ -3,10 +3,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { Connection } from 'mongoose';
+import { LoggerModule } from 'nestjs-pino';
 import { softDeletePlugin } from 'soft-delete-plugin-mongoose';
+
+import { loggerOptions } from './config';
 
 @Module({
   imports: [
+    // https://github.com/iamolegga/nestjs-pino
+    LoggerModule.forRoot(loggerOptions),
+
     // Import MongooseModule with async configuration
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
