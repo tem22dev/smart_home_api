@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger as NestLogger } from '@nestjs/common';
+import { Logger as NestLogger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger, LoggerErrorInterceptor } from 'nestjs-pino';
@@ -23,6 +23,17 @@ async function bootstrap() {
   if (isProduction) {
     app.enable('trust proxy');
   }
+
+  // Global Pipe, Validation check
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+    }),
+  );
+
+  // Set global prefix
+  app.setGlobalPrefix('api');
 
   // Express Middleware
   middleware(app);

@@ -7,6 +7,9 @@ import { LoggerModule } from 'nestjs-pino';
 import { softDeletePlugin } from 'soft-delete-plugin-mongoose';
 
 import { loggerOptions } from './config';
+import { AuthModule } from './auth';
+import { BaseModule } from './base';
+import { UserModule } from './shared/user';
 
 @Module({
   imports: [
@@ -36,6 +39,11 @@ import { loggerOptions } from './config';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // Modules
+    // AuthModule,
+    // BaseModule,
+    UserModule,
   ],
   providers: [],
 })
