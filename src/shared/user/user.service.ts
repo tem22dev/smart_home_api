@@ -114,4 +114,22 @@ export class UserService {
 
     return { result: deletedUser };
   }
+
+  async findOneUsername(username: string) {
+    const user = await this.userModel.findOne({ $or: [{ email: username }, { phone: username }] });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return user;
+  }
+
+  async findUserByToken(refreshToken: string) {
+    return await this.userModel.findOne({ refreshToken });
+  }
+
+  async updateRefreshToken(_id: string, refreshToken: string) {
+    return await this.userModel.updateOne({ _id }, { refreshToken });
+  }
 }

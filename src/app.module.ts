@@ -41,8 +41,8 @@ import { UserModule } from './shared/user';
     }),
 
     // Modules
-    // AuthModule,
-    // BaseModule,
+    AuthModule,
+    BaseModule,
     UserModule,
   ],
   providers: [],

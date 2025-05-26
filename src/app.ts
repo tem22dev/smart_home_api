@@ -3,6 +3,7 @@ import { Logger as NestLogger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger, LoggerErrorInterceptor } from 'nestjs-pino';
+import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app.module';
 import { middleware } from './app.middleware';
@@ -34,6 +35,9 @@ async function bootstrap() {
 
   // Set global prefix
   app.setGlobalPrefix('api');
+
+  // Set cookie
+  app.use(cookieParser());
 
   // Express Middleware
   middleware(app);
