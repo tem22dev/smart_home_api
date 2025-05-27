@@ -3,11 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import aqp from 'api-query-params';
+import mongoose from 'mongoose';
 
 import { User, UserDocument } from '@/schemas/user';
 import { getHashPassword } from './user.util';
 import { CreateUserDto, UpdateUserDto } from './dto';
-import mongoose from 'mongoose';
+import { IPayload } from '@/auth';
 
 @Injectable()
 export class UserService {
@@ -16,7 +17,7 @@ export class UserService {
     @InjectModel(User.name) private userModel: SoftDeleteModel<UserDocument>,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, user: IPayload) {
     const isExist = await this.userModel.findOne({
       $or: [{ email: createUserDto.email }, { phone: createUserDto.phone }],
     });
@@ -32,6 +33,10 @@ export class UserService {
     const newUser = await this.userModel.create({
       ...createUserDto,
       password: hashedPassword,
+      createdBy: {
+        _id: user._id,
+        email: user.email,
+      },
     });
 
     const { password, refreshToken, ...result } = newUser.toObject();
@@ -85,7 +90,7 @@ export class UserService {
     return { result: user };
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto, user: IPayload) {
     const isValidId = mongoose.Types.ObjectId.isValid(id);
     if (!isValidId) {
       throw new BadRequestException('Invalid user ID');
@@ -95,6 +100,10 @@ export class UserService {
       { _id: id },
       {
         ...updateUserDto,
+        updatedBy: {
+          _id: user._id,
+          email: user.email,
+        },
       },
     );
 
@@ -103,7 +112,7 @@ export class UserService {
     };
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: IPayload) {
     const isValidId = mongoose.Types.ObjectId.isValid(id);
     if (!isValidId) {
       throw new BadRequestException('Invalid user ID');
@@ -113,6 +122,16 @@ export class UserService {
     if (founduser && founduser.email === this.configService.get<string>('EMAIL_ADMIN')) {
       throw new BadRequestException('You cannot delete the admin user');
     }
+
+    await this.userModel.updateOne(
+      { _id: id },
+      {
+        deletedBy: {
+          _id: user._id,
+          email: user.email,
+        },
+      },
+    );
 
     const deletedUser = await this.userModel.softDelete({ _id: id });
 
