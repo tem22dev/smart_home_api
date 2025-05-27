@@ -20,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: IPayload) {
-    const user = await this.userService.findOne(payload._id);
+    const user = await this.userService.findOne(payload._id, payload);
     if (!user?.result || user?.result.tokenVersion !== payload.tokenVersion) {
       throw new UnauthorizedException('Token has been invalidated');
     }

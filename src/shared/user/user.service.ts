@@ -50,10 +50,13 @@ export class UserService {
     delete filter.page;
     delete filter.limit;
 
+    const adminEmail = this.configService.get<string>('EMAIL_ADMIN');
+    filter.email = { ...(filter.email || {}), $ne: adminEmail };
+
     let offset = (+currentPage - 1) * +limit;
     let defaultLimit = +limit ? +limit : 10;
 
-    const totalItems = (await this.userModel.find(filter)).length;
+    const totalItems = await this.userModel.countDocuments(filter);
     const totalPages = Math.ceil(totalItems / defaultLimit);
 
     const result = await this.userModel
@@ -76,27 +79,58 @@ export class UserService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user: IPayload) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid user ID');
     }
 
-    const user = await this.userModel.findById(id).select('-password -refreshToken').lean().exec();
+    const userView = await this.userModel.findById(id).select('-password -refreshToken').lean().exec();
 
-    if (!user) {
+    if (!userView) {
       throw new BadRequestException('User not found');
     }
 
-    return { result: user };
+    const adminEmail = this.configService.get<string>('EMAIL_ADMIN');
+
+    if (userView.email === adminEmail && user.email !== adminEmail) {
+      throw new BadRequestException('You cannot view the admin user');
+    }
+
+    return { result: userView };
   }
 
   async update(id: string, updateUserDto: UpdateUserDto, user: IPayload) {
-    const isValidId = mongoose.Types.ObjectId.isValid(id);
-    if (!isValidId) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid user ID');
     }
 
-    const userUpdate = await this.userModel.updateOne(
+    // Check exist email or phone
+    const isExist = await this.userModel.findOne({
+      _id: { $ne: id },
+      $or: [{ email: updateUserDto.email }, { phone: updateUserDto.phone }],
+    });
+
+    if (isExist) {
+      throw new BadRequestException(
+        isExist.email === updateUserDto.email ? 'Email already exists' : 'Phone number already exists',
+      );
+    }
+
+    const userUpdate = await this.userModel.findById(id).select('email').lean().exec();
+
+    if (!userUpdate) {
+      throw new BadRequestException('User not found');
+    }
+
+    const adminEmail = this.configService.get<string>('EMAIL_ADMIN');
+    if (userUpdate.email === adminEmail && user.email !== adminEmail) {
+      throw new BadRequestException('You cannot update the admin user');
+    }
+
+    if (userUpdate.email === adminEmail && user.email === adminEmail && updateUserDto.email !== adminEmail) {
+      throw new BadRequestException('You cannot change the admin user email');
+    }
+    const result = await this.userModel.updateOne(
       { _id: id },
       {
         ...updateUserDto,
@@ -107,9 +141,7 @@ export class UserService {
       },
     );
 
-    return {
-      result: userUpdate,
-    };
+    return { result };
   }
 
   async remove(id: string, user: IPayload) {

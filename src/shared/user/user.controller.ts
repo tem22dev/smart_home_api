@@ -6,25 +6,26 @@ import { ReqUser, Roles } from '@/common/decorators';
 import { IPayload } from '@/auth';
 import { RolesGuard } from '@/common/guards';
 
-@Roles('admin')
 @UseGuards(RolesGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
+  @Roles('admin')
   create(@Body() createUserDto: CreateUserDto, @ReqUser() user: IPayload) {
     return this.userService.create(createUserDto, user);
   }
 
   @Get()
+  @Roles('admin')
   findAll(@Query('page') currentPage: string, @Query('limit') limit: string, @Query() qs: string) {
     return this.userService.findAll(+currentPage, +limit, qs);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
+  findOne(@Param('id') id: string, @ReqUser() user: IPayload) {
+    return this.userService.findOne(id, user);
   }
 
   @Patch(':id')
@@ -33,6 +34,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   remove(@Param('id') id: string, @ReqUser() user: IPayload) {
     return this.userService.remove(id, user);
   }

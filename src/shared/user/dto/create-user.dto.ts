@@ -31,14 +31,6 @@ export class CreateUserDto {
   @MaxLength(32, { message: 'Password must not exceed 32 characters' })
   password: string;
 
-  @IsArray({ message: 'Roles must be an array' })
-  @IsEnum(Role, {
-    each: true,
-    message: 'Each role must be one of: admin, user',
-  })
-  @IsNotEmpty({ message: 'Roles must not be empty' })
-  roles: Role[];
-
   @IsOptional()
   @IsNumber({}, { message: 'Age must be a number' })
   @Type(() => Number)
