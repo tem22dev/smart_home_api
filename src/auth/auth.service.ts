@@ -62,7 +62,7 @@ export class AuthService {
         throw new BadRequestException('Refresh token is invalid');
       }
 
-      const { _id, fullName, email, phone, roles } = user;
+      const { _id, fullName, email, phone, roles, tokenVersion } = user;
       const payload = {
         sub: 'access token login',
         iss: 'from server',
@@ -71,6 +71,7 @@ export class AuthService {
         email,
         phone,
         roles,
+        tokenVersion,
       };
 
       const { password, refreshToken, ...safeUser } = user.toObject();

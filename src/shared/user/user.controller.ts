@@ -17,6 +17,12 @@ export class UserController {
     return this.userService.create(createUserDto, user);
   }
 
+  @Get('deleted')
+  @Roles('admin')
+  findAllDeleted(@Query('page') currentPage: string, @Query('limit') limit: string, @Query() qs: string) {
+    return this.userService.findDeleted(+currentPage, +limit, qs);
+  }
+
   @Get()
   @Roles('admin')
   findAll(@Query('page') currentPage: string, @Query('limit') limit: string, @Query() qs: string) {
@@ -37,5 +43,11 @@ export class UserController {
   @Roles('admin')
   remove(@Param('id') id: string, @ReqUser() user: IPayload) {
     return this.userService.remove(id, user);
+  }
+
+  @Patch(':id/restore')
+  @Roles('admin')
+  restore(@Param('id') id: string) {
+    return this.userService.restore(id);
   }
 }
