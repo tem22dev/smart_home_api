@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { Logger as NestLogger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -7,13 +7,18 @@ import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app.module';
 import { middleware } from './app.middleware';
+import { JwtAuthGuard } from './auth';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
 
-  app.useLogger(app.get(Logger));
+  const reflector = app.get(Reflector);
+  const NestLogger = app.get(Logger);
+
+  app.useLogger(NestLogger);
+  app.useGlobalGuards(new JwtAuthGuard(reflector));
   app.useGlobalInterceptors(new LoggerErrorInterceptor());
 
   // Config use environment variables
