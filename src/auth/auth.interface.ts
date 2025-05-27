@@ -6,4 +6,5 @@ export interface IPayload {
   email: string;
   phone: string;
   roles: string[];
+  tokenVersion: number;
 }

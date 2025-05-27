@@ -37,6 +37,9 @@ export class User extends Document {
   @Prop()
   refreshToken: string;
 
+  @Prop({ default: 0 })
+  tokenVersion: number;
+
   @Prop({ type: Object })
   createdBy: {
     _id: mongoose.Types.ObjectId;

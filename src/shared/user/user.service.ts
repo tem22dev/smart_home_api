@@ -72,12 +72,16 @@ export class UserService {
   }
 
   async findOne(id: string) {
-    const isValidId = mongoose.Types.ObjectId.isValid(id);
-    if (!isValidId) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid user ID');
     }
 
-    const user = await this.userModel.findById(id).select({ password: 0, refreshToken: 0 }).exec();
+    const user = await this.userModel.findById(id).select('-password -refreshToken').lean().exec();
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
     return { result: user };
   }
 
@@ -131,5 +135,8 @@ export class UserService {
 
   async updateRefreshToken(_id: string, refreshToken: string) {
     return await this.userModel.updateOne({ _id }, { refreshToken });
+  }
+  async incrementTokenVersion(userId: string) {
+    await this.userModel.updateOne({ _id: userId }, { $inc: { tokenVersion: 1 } });
   }
 }

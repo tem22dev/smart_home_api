@@ -12,6 +12,7 @@ export interface IUser {
 
 export interface IUserFull extends IUser {
   refreshToken: string;
+  tokenVersion: number;
   createdBy: {
     _id: string;
     email: string;

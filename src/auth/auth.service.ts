@@ -17,7 +17,7 @@ export class AuthService {
   ) {}
 
   async jwtLogin(user: IUserFull, response: Response) {
-    const { _id, fullName, email, phone, roles } = user;
+    const { _id, fullName, email, phone, roles, tokenVersion } = user;
     const payload = {
       sub: 'token login',
       iss: 'from server',
@@ -26,6 +26,7 @@ export class AuthService {
       email,
       phone,
       roles,
+      tokenVersion,
     };
 
     // Set refresh token for cookie client
@@ -88,6 +89,7 @@ export class AuthService {
   }
 
   async jwtLogout(user: IPayload, response: Response) {
+    await this.userService.incrementTokenVersion(user._id);
     await this.userService.updateRefreshToken(user._id, '');
     response.clearCookie('refreshToken');
 
@@ -105,6 +107,8 @@ export class AuthService {
 
   async validateUser(username: string, password: string) {
     const user = await this.userService.findOneUsername(username);
+
+    if (user.isDeleted === true) return null;
 
     const isValid = isValidPassword(password, user.password!);
 
