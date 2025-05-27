@@ -34,7 +34,7 @@ export class CreateUserDto {
   @IsArray({ message: 'Roles must be an array' })
   @IsEnum(Role, {
     each: true,
-    message: 'Each role must be one of: admin, user, superAdmin',
+    message: 'Each role must be one of: admin, user',
   })
   @IsNotEmpty({ message: 'Roles must not be empty' })
   roles: Role[];
