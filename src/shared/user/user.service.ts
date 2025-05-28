@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
@@ -88,7 +88,7 @@ export class UserService {
     const userView = await this.userModel.findById(id).select('-password -refreshToken').lean().exec();
 
     if (!userView) {
-      throw new BadRequestException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     const adminEmail = this.configService.get<string>('EMAIL_ADMIN');
@@ -120,7 +120,7 @@ export class UserService {
     const userUpdate = await this.userModel.findById(id).select('email').lean().exec();
 
     if (!userUpdate) {
-      throw new BadRequestException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     const adminEmail = this.configService.get<string>('EMAIL_ADMIN');
@@ -219,7 +219,7 @@ export class UserService {
 
     const foundUser = await this.userModel.findOne({ _id: id, isDeleted: true }).lean().exec();
     if (!foundUser) {
-      throw new BadRequestException('User not found or not deleted');
+      throw new NotFoundException('User not found or not deleted');
     }
 
     const restoredUser = await this.userModel.restore({ _id: id });
@@ -235,7 +235,7 @@ export class UserService {
 
     const userUpdate = await this.userModel.findById(id).lean().exec();
     if (!userUpdate) {
-      throw new BadRequestException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     const result = await this.userModel.updateOne(
@@ -259,7 +259,7 @@ export class UserService {
 
     const currentUser = await this.userModel.findById(id).select('+password').lean().exec();
     if (!currentUser) {
-      throw new BadRequestException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     const adminEmail = this.configService.get<string>('EMAIL_ADMIN');
@@ -302,7 +302,7 @@ export class UserService {
     const user = await this.userModel.findOne({ $or: [{ email: username }, { phone: username }] });
 
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     return user;

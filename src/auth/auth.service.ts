@@ -102,6 +102,20 @@ export class AuthService {
     };
   }
 
+  public getPayload(token: string) {
+    try {
+      const payload = this.jwtService.decode<IPayload | null>(token);
+      if (!payload) {
+        return null;
+      }
+
+      return payload;
+    } catch {
+      // Unexpected token i in JSON at position XX
+      return null;
+    }
+  }
+
   private getRefreshToken(payload: IPayload): string {
     return this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),

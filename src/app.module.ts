@@ -10,6 +10,7 @@ import { loggerOptions } from './config';
 import { AuthModule } from './auth';
 import { BaseModule } from './base';
 import { UserModule } from './shared/user';
+// import { CommonModule } from './common';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { UserModule } from './shared/user';
 
     // Modules
     AuthModule,
+    // CommonModule,
     BaseModule,
     UserModule,
   ],
