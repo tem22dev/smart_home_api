@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { middleware } from './app.middleware';
 import { JwtAuthGuard } from './auth';
+import { TransformInterceptor } from './common';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -19,6 +20,7 @@ async function bootstrap() {
 
   app.useLogger(NestLogger);
   app.useGlobalGuards(new JwtAuthGuard(reflector));
+  app.useGlobalInterceptors(new TransformInterceptor(reflector));
   app.useGlobalInterceptors(new LoggerErrorInterceptor());
 
   // Config use environment variables

@@ -72,10 +72,12 @@ export class UserService {
     return {
       result,
       metadata: {
-        currentPage,
-        pageSize: limit,
-        pages: totalPages,
-        total: totalItems,
+        pagination: {
+          currentPage,
+          pageSize: limit,
+          pages: totalPages,
+          total: totalItems,
+        },
       },
     };
   }
@@ -204,10 +206,12 @@ export class UserService {
     return {
       result,
       metadata: {
-        currentPage,
-        pageSize: limit,
-        pages: totalPages,
-        total: totalItems,
+        pagination: {
+          currentPage,
+          pageSize: limit,
+          pages: totalPages,
+          total: totalItems,
+        },
       },
     };
   }
@@ -275,7 +279,6 @@ export class UserService {
       throw new BadRequestException('Current password is incorrect');
     }
 
-    // Kiểm tra mật khẩu mới và xác nhận khớp nhau
     if (updatePasswordDto.newPassword !== updatePasswordDto.confirmPassword) {
       throw new BadRequestException('New password and confirm password do not match');
     }
