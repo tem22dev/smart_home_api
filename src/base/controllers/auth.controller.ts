@@ -2,7 +2,7 @@ import { Controller, Get, Post, UseGuards, Res, Req } from '@nestjs/common';
 import { AuthService, IPayload } from '@/auth';
 import { Request, Response } from 'express';
 
-import { Public, ReqUser } from '@/common/decorators';
+import { Public, ReqUser } from '@/common';
 import { LocalAuthGuard } from '@/auth/guards';
 import { IUserFull } from '@/shared/user';
 

@@ -4,12 +4,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { Connection } from 'mongoose';
 import { LoggerModule } from 'nestjs-pino';
+import { APP_FILTER } from '@nestjs/core';
 import { softDeletePlugin } from 'soft-delete-plugin-mongoose';
 
 import { loggerOptions } from './config';
 import { AuthModule } from './auth';
 import { BaseModule } from './base';
 import { UserModule } from './shared/user';
+import { ExceptionsFilter } from './common';
 // import { CommonModule } from './common';
 
 @Module({
@@ -47,6 +49,6 @@ import { UserModule } from './shared/user';
     BaseModule,
     UserModule,
   ],
-  providers: [],
+  providers: [{ provide: APP_FILTER, useClass: ExceptionsFilter }],
 })
 export class AppModule {}

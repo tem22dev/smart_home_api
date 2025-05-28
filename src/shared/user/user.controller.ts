@@ -2,9 +2,8 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } f
 
 import { UserService } from './user.service';
 import { CreateUserDto, UpdatePasswordDto, UpdateUserDto } from './dto';
-import { ReqUser, Roles } from '@/common/decorators';
+import { ReqUser, Roles, RolesGuard } from '@/common';
 import { IPayload } from '@/auth';
-import { RolesGuard } from '@/common/guards';
 
 @UseGuards(RolesGuard)
 @Controller('users')
