@@ -8,6 +8,7 @@ export interface IUser {
   age: number;
   gender: number;
   roles: string[];
+  active: boolean;
 }
 
 export interface IUserFull extends IUser {

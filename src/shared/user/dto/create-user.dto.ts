@@ -1,5 +1,5 @@
 import {
-  IsArray,
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -10,7 +10,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { Gender, Role } from '@/shared/enums';
+import { Gender } from '@/shared/enums';
 import { Type } from 'class-transformer';
 
 export class CreateUserDto {
@@ -45,4 +45,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsString({ message: 'Address must be a string' })
   address: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'Active must be a boolean' })
+  active: boolean;
 }

@@ -4,12 +4,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import aqp from 'api-query-params';
 import mongoose from 'mongoose';
+import { parse } from 'qs';
 
 import { User, UserDocument } from '@/schemas/user';
 import { getHashPassword } from './user.util';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { IPayload } from '@/auth';
-import { parse } from 'qs';
 
 @Injectable()
 export class UserService {
@@ -131,6 +131,12 @@ export class UserService {
     if (userUpdate.email === adminEmail && user.email === adminEmail && updateUserDto.email !== adminEmail) {
       throw new BadRequestException('You cannot change the admin user email');
     }
+
+    if (userUpdate.email === adminEmail && user.email === adminEmail && updateUserDto.active === false) {
+      throw new BadRequestException('You cannot change the admin user active status');
+    }
+    console.log('updateUserDto', updateUserDto);
+
     const result = await this.userModel.updateOne(
       { _id: id },
       {
@@ -172,8 +178,6 @@ export class UserService {
   }
 
   async findDeleted(currentPage: number, limit: number, qs: string) {
-    console.log('findDeleted =====>', currentPage, limit, qs);
-
     const parsedQs = parse(qs);
     const { filter, sort, population, projection } = aqp(parsedQs as any);
 
@@ -219,7 +223,33 @@ export class UserService {
     }
 
     const restoredUser = await this.userModel.restore({ _id: id });
+    await this.userModel.updateOne({ _id: id }, { active: true });
+
     return { result: restoredUser };
+  }
+
+  async toggleActive(id: string, active: boolean, user: IPayload) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    const userUpdate = await this.userModel.findById(id).lean().exec();
+    if (!userUpdate) {
+      throw new BadRequestException('User not found');
+    }
+
+    const result = await this.userModel.updateOne(
+      { _id: id },
+      {
+        active,
+        updatedBy: {
+          _id: user._id,
+          email: user.email,
+        },
+      },
+    );
+
+    return { result };
   }
 
   async findOneUsername(username: string) {
@@ -239,6 +269,7 @@ export class UserService {
   async updateRefreshToken(_id: string, refreshToken: string) {
     return await this.userModel.updateOne({ _id }, { refreshToken });
   }
+
   async incrementTokenVersion(userId: string) {
     await this.userModel.updateOne({ _id: userId }, { $inc: { tokenVersion: 1 } });
   }

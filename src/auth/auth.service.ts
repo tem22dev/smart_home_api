@@ -61,6 +61,9 @@ export class AuthService {
       if (!user) {
         throw new BadRequestException('Refresh token is invalid');
       }
+      if (user.isDeleted || !user.active) {
+        throw new BadRequestException('User is not active or has been deleted');
+      }
 
       const { _id, fullName, email, phone, roles, tokenVersion } = user;
       const payload = {
@@ -109,7 +112,7 @@ export class AuthService {
   async validateUser(username: string, password: string) {
     const user = await this.userService.findOneUsername(username);
 
-    if (user.isDeleted === true) return null;
+    if (user.isDeleted === true || user.active === false) return null;
 
     const isValid = isValidPassword(password, user.password!);
 

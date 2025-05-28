@@ -50,4 +50,10 @@ export class UserController {
   restore(@Param('id') id: string) {
     return this.userService.restore(id);
   }
+
+  @Patch(':id/toggle-active')
+  @Roles('admin')
+  toggleActive(@Param('id') id: string, @Body('active') active: boolean, @ReqUser() user: IPayload) {
+    return this.userService.toggleActive(id, active, user);
+  }
 }

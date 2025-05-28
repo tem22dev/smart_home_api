@@ -33,6 +33,9 @@ export class User extends Document {
   @Prop({ required: true, enum: Role, default: [Role.User], type: [String] })
   roles: Role[];
 
+  @Prop({ type: Boolean, default: true })
+  active: boolean;
+
   @Exclude()
   @Prop()
   refreshToken: string;

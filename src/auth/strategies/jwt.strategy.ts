@@ -24,6 +24,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user?.result || user?.result.tokenVersion !== payload.tokenVersion) {
       throw new UnauthorizedException('Token has been invalidated');
     }
+
+    if (!user.result.active) {
+      throw new UnauthorizedException('User is not active');
+    }
     return payload;
   }
 }
