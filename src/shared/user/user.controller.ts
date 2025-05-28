@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 
 import { UserService } from './user.service';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, UpdatePasswordDto, UpdateUserDto } from './dto';
 import { ReqUser, Roles } from '@/common/decorators';
 import { IPayload } from '@/auth';
 import { RolesGuard } from '@/common/guards';
@@ -55,5 +55,10 @@ export class UserController {
   @Roles('admin')
   toggleActive(@Param('id') id: string, @Body('active') active: boolean, @ReqUser() user: IPayload) {
     return this.userService.toggleActive(id, active, user);
+  }
+
+  @Patch(':id/password')
+  updatePassword(@Param('id') id: string, @Body() updatePasswordDto: UpdatePasswordDto, @ReqUser() user: IPayload) {
+    return this.userService.updatePassword(id, updatePasswordDto, user);
   }
 }

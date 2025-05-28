@@ -7,8 +7,8 @@ import mongoose from 'mongoose';
 import { parse } from 'qs';
 
 import { User, UserDocument } from '@/schemas/user';
-import { getHashPassword } from './user.util';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { getHashPassword, isValidPassword } from './user.util';
+import { CreateUserDto, UpdatePasswordDto, UpdateUserDto } from './dto';
 import { IPayload } from '@/auth';
 
 @Injectable()
@@ -248,6 +248,52 @@ export class UserService {
         },
       },
     );
+
+    return { result };
+  }
+
+  async updatePassword(id: string, updatePasswordDto: UpdatePasswordDto, user: IPayload) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    const currentUser = await this.userModel.findById(id).select('+password').lean().exec();
+    if (!currentUser) {
+      throw new BadRequestException('User not found');
+    }
+
+    const adminEmail = this.configService.get<string>('EMAIL_ADMIN');
+    if (currentUser.email === adminEmail && user.email !== adminEmail) {
+      throw new BadRequestException('You cannot update the admin user password');
+    }
+    if (currentUser._id.toString() !== user._id.toString() && user.email !== adminEmail) {
+      throw new BadRequestException('You can only update your own password');
+    }
+
+    const isPasswordValid = isValidPassword(updatePasswordDto.currentPassword, currentUser.password);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    // Kiểm tra mật khẩu mới và xác nhận khớp nhau
+    if (updatePasswordDto.newPassword !== updatePasswordDto.confirmPassword) {
+      throw new BadRequestException('New password and confirm password do not match');
+    }
+
+    const hashedNewPassword = getHashPassword(updatePasswordDto.newPassword);
+
+    const result = await this.userModel.updateOne(
+      { _id: id },
+      {
+        password: hashedNewPassword,
+        updatedBy: {
+          _id: user._id,
+          email: user.email,
+        },
+      },
+    );
+
+    await this.incrementTokenVersion(id);
 
     return { result };
   }
