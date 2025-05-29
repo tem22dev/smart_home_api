@@ -13,6 +13,7 @@ import { AuthModule } from './auth';
 import { BaseModule } from './base';
 import { UserModule } from './shared/user';
 import { ExceptionsFilter } from './common';
+import { DatabaseModule } from './database';
 // import { CommonModule } from './common';
 
 @Module({
@@ -59,6 +60,7 @@ import { ExceptionsFilter } from './common';
     // CommonModule,
     BaseModule,
     UserModule,
+    DatabaseModule,
   ],
   providers: [
     {
