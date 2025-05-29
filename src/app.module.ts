@@ -4,8 +4,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { Connection } from 'mongoose';
 import { LoggerModule } from 'nestjs-pino';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { softDeletePlugin } from 'soft-delete-plugin-mongoose';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { loggerOptions } from './config';
 import { AuthModule } from './auth';
@@ -18,6 +19,16 @@ import { ExceptionsFilter } from './common';
   imports: [
     // https://github.com/iamolegga/nestjs-pino
     LoggerModule.forRoot(loggerOptions),
+
+    // https://docs.nestjs.com/security/rate-limiting
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 10,
+        },
+      ],
+    }),
 
     // Import MongooseModule with async configuration
     MongooseModule.forRootAsync({
@@ -49,6 +60,15 @@ import { ExceptionsFilter } from './common';
     BaseModule,
     UserModule,
   ],
-  providers: [{ provide: APP_FILTER, useClass: ExceptionsFilter }],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: ExceptionsFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
