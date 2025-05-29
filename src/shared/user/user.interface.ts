@@ -6,7 +6,7 @@ export interface IUser {
   password: string;
   address: string;
   age: number;
-  gender: number;
+  gender: string;
   roles: string[];
   active: boolean;
 }
