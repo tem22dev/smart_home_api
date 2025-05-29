@@ -10,9 +10,10 @@
     "yarn": ">=1.22.0"
   },
   "scripts": {
-    "start": "node dist/app",
+    "start": "node dist/src/app",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
+    "start:repl": "nest start --entryFile repl",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
@@ -21,6 +22,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "doc": "compodoc -p tsconfig.json -s -d docs",
+    "doc:api": "yarn run build && node dist/src/swagger",
     "prepare": "husky install",
     "npm-check": "taze major -lrw"
   },
@@ -35,6 +38,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/serve-static": "^5.0.3",
+    "@nestjs/swagger": "^11.2.0",
     "@nestjs/terminus": "^11.0.0",
     "api-query-params": "^5.4.0",
     "axios": "^1.9.0",
@@ -61,6 +65,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@compodoc/compodoc": "^1.1.26",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
     "@nestjs/cli": "^11.0.0",
