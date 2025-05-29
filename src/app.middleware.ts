@@ -18,7 +18,12 @@ export function middleware(app: INestApplication): INestApplication {
       crossOriginEmbedderPolicy: isProduction ? undefined : false,
     }),
   );
-  // app.enableCors();
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    credentials: true,
+  });
 
   return app;
 }
