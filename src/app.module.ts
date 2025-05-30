@@ -15,6 +15,7 @@ import { UserModule } from './shared/user';
 import { ExceptionsFilter } from './common';
 import { DatabaseModule } from './database';
 // import { CommonModule } from './common';
+import { UploadModule } from './upload';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { DatabaseModule } from './database';
     // Modules
     AuthModule,
     // CommonModule,
+    UploadModule,
     BaseModule,
     UserModule,
     DatabaseModule,
