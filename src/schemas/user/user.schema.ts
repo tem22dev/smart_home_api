@@ -11,6 +11,9 @@ export class User extends Document {
   @Prop({ required: true })
   fullName: string;
 
+  @Prop({ required: true, default: 'images/avatar-default.jpg' })
+  avatar: string;
+
   @Prop({ required: true, unique: true })
   email: string;
 

@@ -18,6 +18,10 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Full name must not be empty' })
   fullName: string;
 
+  @IsOptional()
+  @IsString({ message: 'Avatar must be a string' })
+  avatar: string;
+
   @IsEmail({}, { message: 'Invalid email format' })
   @IsNotEmpty({ message: 'Email must not be empty' })
   email: string;

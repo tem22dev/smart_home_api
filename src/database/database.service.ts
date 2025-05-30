@@ -34,6 +34,7 @@ export class DatabaseService implements OnModuleInit {
         {
           _id: '6837f3e99113dd792bf4daf3',
           fullName: 'Admin',
+          avatar: 'images/avatar-default.jpg',
           email: this.configService.get<string>('EMAIL_ADMIN'),
           phone: '0987654321',
           password: getHashPassword(this.configService.get<string>('INIT_PASSWORD') || '123456'),
@@ -46,6 +47,7 @@ export class DatabaseService implements OnModuleInit {
         {
           _id: '6837f3e99113dd792bf4daf4',
           fullName: 'trungem',
+          avatar: 'images/avatar-default.jpg',
           email: 'trungem@gmail.com',
           phone: '0912345678',
           password: getHashPassword(this.configService.get<string>('INIT_PASSWORD') || '123456'),
