@@ -14,10 +14,21 @@ export function middleware(app: INestApplication): INestApplication {
 
   app.use(
     helmet({
-      contentSecurityPolicy: isProduction ? undefined : false,
-      crossOriginEmbedderPolicy: isProduction ? undefined : false,
+      contentSecurityPolicy: isProduction
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", 'data:'],
+            },
+          }
+        : false,
+      crossOriginEmbedderPolicy: isProduction,
+      crossOriginResourcePolicy: isProduction ? { policy: 'same-origin' } : false,
     }),
   );
+
   app.enableCors({
     origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
