@@ -1,4 +1,4 @@
-import { Controller, Post, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, Headers } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ResponseMessage } from '@/common';
@@ -8,12 +8,10 @@ export class UploadController {
   @Post('file')
   @ResponseMessage('Upload file')
   @UseInterceptors(FileInterceptor('file'))
-  uploadFile(
-    @UploadedFile()
-    file: Express.Multer.File,
-  ) {
+  uploadFile(@UploadedFile() file: Express.Multer.File, @Headers('folder-type') folder: string) {
+    const fileUrl = `${folder || 'uploads'}/${file.filename}`;
     return {
-      fileName: file.filename,
+      fileName: fileUrl,
     };
   }
 }
