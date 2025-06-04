@@ -10,6 +10,7 @@ import { User, UserDocument } from '@/schemas/user';
 import { getHashPassword, isValidPassword } from './user.util';
 import { CreateUserDto, UpdatePasswordDto, UpdateUserDto } from './dto';
 import { IPayload } from '@/auth';
+import { UpdatePasswordAdminDto } from './dto/update-password-admin.dto';
 
 @Injectable()
 export class UserService {
@@ -284,6 +285,35 @@ export class UserService {
     }
 
     const hashedNewPassword = getHashPassword(updatePasswordDto.newPassword);
+
+    const result = await this.userModel.updateOne(
+      { _id: id },
+      {
+        password: hashedNewPassword,
+        updatedBy: {
+          _id: user._id,
+          email: user.email,
+        },
+      },
+    );
+
+    await this.incrementTokenVersion(id);
+
+    return { result };
+  }
+
+  async updatePasswordAdmin(id: string, updatePasswordAdminDto: UpdatePasswordAdminDto, user: IPayload) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    const currentUser = await this.userModel.findById(id).select('+password').lean().exec();
+    if (!currentUser) throw new NotFoundException('User not found');
+
+    if (updatePasswordAdminDto.newPassword !== updatePasswordAdminDto.confirmPassword)
+      throw new BadRequestException('New password and confirm password do not match');
+
+    const hashedNewPassword = getHashPassword(updatePasswordAdminDto.newPassword);
 
     const result = await this.userModel.updateOne(
       { _id: id },

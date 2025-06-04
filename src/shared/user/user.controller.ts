@@ -4,6 +4,7 @@ import { UserService } from './user.service';
 import { CreateUserDto, UpdatePasswordDto, UpdateUserDto } from './dto';
 import { ReqUser, ResponseMessage, Roles, RolesGuard } from '@/common';
 import { IPayload } from '@/auth';
+import { UpdatePasswordAdminDto } from './dto/update-password-admin.dto';
 
 @UseGuards(RolesGuard)
 @Controller('users')
@@ -68,5 +69,16 @@ export class UserController {
   @ResponseMessage('Password updated successfully')
   updatePassword(@Param('id') id: string, @Body() updatePasswordDto: UpdatePasswordDto, @ReqUser() user: IPayload) {
     return this.userService.updatePassword(id, updatePasswordDto, user);
+  }
+
+  @Patch(':id/password-admin')
+  @Roles('admin')
+  @ResponseMessage('Password updated successfully')
+  updatePasswordForAdmin(
+    @Param('id') id: string,
+    @Body() updatePasswordAdminDto: UpdatePasswordAdminDto,
+    @ReqUser() user: IPayload,
+  ) {
+    return this.userService.updatePasswordAdmin(id, updatePasswordAdminDto, user);
   }
 }
