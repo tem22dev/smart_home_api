@@ -16,7 +16,7 @@ import { ExceptionsFilter } from './common';
 import { DatabaseModule } from './database';
 // import { CommonModule } from './common';
 import { UploadModule } from './upload';
-
+import { DeviceModule } from './device';
 @Module({
   imports: [
     // https://github.com/iamolegga/nestjs-pino
@@ -60,6 +60,7 @@ import { UploadModule } from './upload';
     AuthModule,
     // CommonModule,
     UploadModule,
+    DeviceModule,
     BaseModule,
     UserModule,
     DatabaseModule,
