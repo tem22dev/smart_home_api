@@ -15,7 +15,15 @@ export class DeviceController {
   @Post()
   @ResponseMessage('Device created successfully')
   async create(@Body() createDeviceDto: CreateDeviceDto, @ReqUser() user: IPayload) {
-    return await this.deviceService.create(createDeviceDto, user);
+    const device = await this.deviceService.create(createDeviceDto, user);
+
+    if (device && device.id && device.result) {
+      const deviceId = device.id;
+      const config = { sensors: device.result.sensors, actuators: device.result.actuators };
+      this.mqttService.publishConfig(deviceId, config);
+    }
+
+    return device;
   }
 
   @Get('deleted')

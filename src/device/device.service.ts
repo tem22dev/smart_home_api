@@ -17,7 +17,15 @@ export class DeviceService {
   ) {}
 
   async create(createDeviceDto: CreateDeviceDto, user: IPayload) {
-    const result = await this.deviceModel.create({
+    const isExist = await this.deviceModel.findOne({
+      deviceId: createDeviceDto.deviceId,
+    });
+
+    if (isExist) {
+      throw new BadRequestException('Mã thiết bị đã tồn tại');
+    }
+
+    const device = await this.deviceModel.create({
       ...createDeviceDto,
       createdBy: {
         _id: user._id,
@@ -25,7 +33,9 @@ export class DeviceService {
       },
     });
 
-    return { result };
+    const result = device.toObject();
+
+    return { result, id: result._id?.toString() };
   }
 
   async findAll(currentPage: number, limit: number, qs: string) {

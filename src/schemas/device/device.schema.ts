@@ -8,22 +8,33 @@ export class Device extends Document {
   @Prop({ required: true, trim: true })
   name: string;
 
+  @Prop({ required: true, unique: true, trim: true })
+  deviceId: string;
+
+  @Prop({ required: true, default: 'images/sensor-default.png' })
+  image: string;
+
   @Prop({ type: Object })
   sensors: {
     [sensorId: string]: {
+      image?: string;
       pin: number;
       type: string;
       value?: any;
       unit?: string;
+      threshold?: number;
     };
   };
 
   @Prop({ type: Object })
   actuators: {
     [actuatorId: string]: {
+      image?: string;
       pin: number;
       type: string;
       state?: boolean;
+      minAngle?: number;
+      maxAngle?: number;
     };
   };
 
@@ -32,6 +43,9 @@ export class Device extends Document {
 
   @Prop({ type: String, enum: ['on', 'off'], default: 'off' })
   status: string;
+
+  @Prop({ type: String })
+  description: string;
 
   @Prop({ type: Object })
   createdBy: {

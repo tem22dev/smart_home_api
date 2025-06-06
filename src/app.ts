@@ -9,11 +9,25 @@ import { AppModule } from './app.module';
 import { middleware } from './app.middleware';
 import { JwtAuthGuard } from './auth';
 import { TransformInterceptor } from './common';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.MQTT,
+    options: {
+      url: 'mqtt://localhost:1883',
+      clientId: 'nestjs-mqtt',
+      reconnectPeriod: 1000,
+      keepalive: 60,
+    },
+  });
+
+  // Start microservice
+  await app.startAllMicroservices();
 
   const reflector = app.get(Reflector);
   const NestLogger = app.get(Logger);
