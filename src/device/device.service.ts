@@ -8,12 +8,13 @@ import { IPayload } from '@/auth';
 import aqp from 'api-query-params';
 import { parse } from 'qs';
 import mongoose from 'mongoose';
+import { SensorHistory, SensorHistoryDocument } from '@/schemas/sensor-history';
 
 @Injectable()
 export class DeviceService {
   constructor(
     @InjectModel(Device.name) private deviceModel: SoftDeleteModel<DeviceDocument>,
-    // @InjectModel(SensorHistory.name) private sensorHistoryModel: SoftDeleteModel<SensorHistoryDocument>,
+    @InjectModel(SensorHistory.name) private sensorHistoryModel: SoftDeleteModel<SensorHistoryDocument>,
   ) {}
 
   async create(createDeviceDto: CreateDeviceDto, user: IPayload) {
@@ -164,6 +165,35 @@ export class DeviceService {
 
   async updateStatus(id: string, status: 'on' | 'off') {
     const result = await this.deviceModel.updateOne({ _id: id }, { status }).exec();
+
+    return { result };
+  }
+
+  async updateSensorValue(id: string, sensorId: string, value: any, unit: string) {
+    const device = await this.deviceModel
+      .findOneAndUpdate(
+        { _id: id },
+        { $set: { [`sensors.${sensorId}.value`]: value, [`sensors.${sensorId}.unit`]: unit } },
+        { new: true },
+      )
+      .exec();
+
+    if (device) {
+      await this.sensorHistoryModel.create({
+        deviceId: device._id,
+        sensorId,
+        value,
+        unit,
+      });
+    }
+
+    return { result: device };
+  }
+
+  async updateActuatorState(id: string, actuatorId: string, state: boolean) {
+    const result = await this.deviceModel
+      .findOneAndUpdate({ _id: id }, { $set: { [`actuators.${actuatorId}.state`]: state } }, { new: true })
+      .exec();
 
     return { result };
   }
