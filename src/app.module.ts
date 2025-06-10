@@ -17,6 +17,9 @@ import { DatabaseModule } from './database';
 // import { CommonModule } from './common';
 import { UploadModule } from './upload';
 import { DeviceModule } from './device';
+import { SensorModule } from './sensor';
+import { ActuatorModule } from './actuator';
+import { SensorHistoryModule } from './sensor-history';
 @Module({
   imports: [
     // https://github.com/iamolegga/nestjs-pino
@@ -64,6 +67,9 @@ import { DeviceModule } from './device';
     BaseModule,
     UserModule,
     DatabaseModule,
+    SensorModule,
+    ActuatorModule,
+    SensorHistoryModule,
   ],
   providers: [
     {

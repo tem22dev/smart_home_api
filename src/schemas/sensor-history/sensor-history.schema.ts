@@ -1,16 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, HydratedDocument } from 'mongoose';
-import { Device } from '../device';
+import { Sensor } from '../sensor';
 
 export type SensorHistoryDocument = HydratedDocument<SensorHistory>;
 
 @Schema({ timestamps: true, collection: 'sensor_history' })
 export class SensorHistory extends Document {
-  @Prop({ type: mongoose.Types.ObjectId, ref: Device.name, required: true })
-  deviceId: mongoose.Types.ObjectId;
-
-  @Prop({ required: true })
-  sensorId: string;
+  @Prop({ type: mongoose.Types.ObjectId, ref: Sensor.name, required: true })
+  sensorId: mongoose.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.Mixed, required: true })
   value: any;

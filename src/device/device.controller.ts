@@ -15,15 +15,7 @@ export class DeviceController {
   @Post()
   @ResponseMessage('Device created successfully')
   async create(@Body() createDeviceDto: CreateDeviceDto, @ReqUser() user: IPayload) {
-    const device = await this.deviceService.create(createDeviceDto, user);
-
-    if (device && device.id && device.result) {
-      const deviceId = device.id;
-      const config = { sensors: device.result.sensors, actuators: device.result.actuators };
-      this.mqttService.publishConfig(deviceId, config);
-    }
-
-    return device;
+    return await this.deviceService.create(createDeviceDto, user);
   }
 
   @Get('deleted')
@@ -64,7 +56,7 @@ export class DeviceController {
 
   @Patch(':id/toggle-status')
   @ResponseMessage('Device status toggled successfully')
-  toggleActive(@Param('id') id: string, @Body('status') status: 'on' | 'off') {
+  toggleActive(@Param('id') id: string, @Body('status') status: boolean) {
     return this.deviceService.updateStatus(id, status);
   }
 }

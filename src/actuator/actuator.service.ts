@@ -1,29 +1,20 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { CreateActuatorDto, UpdateActuatorDto } from './dto';
+import mongoose from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
-
-import { CreateDeviceDto, UpdateDeviceDto } from './dto';
-import { Device, DeviceDocument } from '@/schemas/device';
 import { IPayload } from '@/auth';
 import aqp from 'api-query-params';
+import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
+import { Actuator, ActuatorDocument } from '@/schemas/actuator';
 import { parse } from 'qs';
-import mongoose from 'mongoose';
 
 @Injectable()
-export class DeviceService {
-  constructor(@InjectModel(Device.name) private deviceModel: SoftDeleteModel<DeviceDocument>) {}
+export class ActuatorService {
+  constructor(@InjectModel(Actuator.name) private sensorModel: SoftDeleteModel<ActuatorDocument>) {}
 
-  async create(createDeviceDto: CreateDeviceDto, user: IPayload) {
-    const isExist = await this.deviceModel.findOne({
-      deviceCode: createDeviceDto.deviceCode,
-    });
-
-    if (isExist) {
-      throw new BadRequestException('Mã thiết bị đã tồn tại');
-    }
-
-    const result = await this.deviceModel.create({
-      ...createDeviceDto,
+  async create(createActuatorDto: CreateActuatorDto, user: IPayload) {
+    const result = await this.sensorModel.create({
+      ...createActuatorDto,
       createdBy: {
         _id: user._id,
         email: user.email,
@@ -42,10 +33,10 @@ export class DeviceService {
     let offset = (+currentPage - 1) * +limit;
     let defaultLimit = +limit ? +limit : 10;
 
-    const totalItems = await this.deviceModel.countDocuments(filter);
+    const totalItems = await this.sensorModel.countDocuments(filter);
     const totalPages = Math.ceil(totalItems / defaultLimit);
 
-    const result = await this.deviceModel
+    const result = await this.sensorModel
       .find(filter)
       .skip(offset)
       .limit(defaultLimit)
@@ -70,21 +61,21 @@ export class DeviceService {
   async findOne(id: string) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
 
-    const result = await this.deviceModel.findById(id).exec();
+    const result = await this.sensorModel.findById(id).populate({ path: 'deviceId' }).exec();
 
-    if (!result) throw new NotFoundException('Device not found');
+    if (!result) throw new NotFoundException('Sensor not found');
 
     return { result };
   }
 
-  async update(id: string, updateDeviceDto: UpdateDeviceDto, user: IPayload) {
+  async update(id: string, updateActuatorDto: UpdateActuatorDto, user: IPayload) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
 
-    const result = await this.deviceModel
+    const result = await this.sensorModel
       .updateOne(
         { _id: id },
         {
-          ...updateDeviceDto,
+          ...updateActuatorDto,
           updatedBy: {
             _id: user._id,
             email: user.email,
@@ -99,7 +90,7 @@ export class DeviceService {
   async remove(id: string, user: IPayload) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
 
-    await this.deviceModel.updateOne(
+    await this.sensorModel.updateOne(
       { _id: id },
       {
         deletedBy: {
@@ -109,7 +100,7 @@ export class DeviceService {
       },
     );
 
-    const result = await this.deviceModel.softDelete({ _id: id });
+    const result = await this.sensorModel.softDelete({ _id: id });
 
     return { result };
   }
@@ -126,10 +117,10 @@ export class DeviceService {
     let offset = (+currentPage - 1) * +limit;
     let defaultLimit = +limit ? +limit : 10;
 
-    const totalItems = await this.deviceModel.countDocuments(filter);
+    const totalItems = await this.sensorModel.countDocuments(filter);
     const totalPages = Math.ceil(totalItems / defaultLimit);
 
-    const result = await this.deviceModel
+    const result = await this.sensorModel
       .find(filter)
       .skip(offset)
       .limit(defaultLimit)
@@ -154,18 +145,18 @@ export class DeviceService {
   async restore(id: string) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
 
-    const foundDevice = await this.deviceModel.findOne({ _id: id, isDeleted: true }).lean().exec();
-    if (!foundDevice) throw new NotFoundException('Device not found or not deleted');
+    const foundDevice = await this.sensorModel.findOne({ _id: id, isDeleted: true }).lean().exec();
+    if (!foundDevice) throw new NotFoundException('Sensor not found or not deleted');
 
-    const restoredDevice = await this.deviceModel.restore({ _id: id });
+    const restoredSensor = await this.sensorModel.restore({ _id: id });
 
-    return { result: restoredDevice };
+    return { result: restoredSensor };
   }
 
   async updateStatus(id: string, status: boolean) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
 
-    const result = await this.deviceModel.updateOne({ _id: id }, { status }).exec();
+    const result = await this.sensorModel.updateOne({ _id: id }, { status }).exec();
 
     return { result };
   }

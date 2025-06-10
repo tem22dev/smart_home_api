@@ -1,20 +1,33 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, HydratedDocument } from 'mongoose';
+import { Device } from '../device';
 
-export type DeviceDocument = HydratedDocument<Device>;
+export type ActuatorDocument = HydratedDocument<Actuator>;
 
-@Schema({ timestamps: true, collection: 'devices' })
-export class Device extends Document {
+@Schema({ timestamps: true, collection: 'actuators' })
+export class Actuator extends Document {
+  @Prop({ type: mongoose.Types.ObjectId, ref: Device.name, required: true })
+  deviceId: mongoose.Types.ObjectId;
+
   @Prop({ required: true, trim: true })
   name: string;
-
-  @Prop({ required: true, unique: true, trim: true })
-  deviceCode: string;
 
   @Prop({ required: true })
   image: string;
 
-  @Prop({ type: Boolean, default: true })
+  @Prop({ required: true })
+  pin: number;
+
+  @Prop({ required: true })
+  type: string;
+
+  @Prop()
+  minAngle: number;
+
+  @Prop()
+  maxAngle: number;
+
+  @Prop()
   status: boolean;
 
   @Prop({ type: String })
@@ -51,4 +64,4 @@ export class Device extends Document {
   isDeleted: Boolean;
 }
 
-export const DeviceSchema = SchemaFactory.createForClass(Device);
+export const ActuatorSchema = SchemaFactory.createForClass(Actuator);
