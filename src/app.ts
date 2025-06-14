@@ -10,11 +10,14 @@ import { middleware } from './app.middleware';
 import { JwtAuthGuard } from './auth';
 import { TransformInterceptor } from './common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
+
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.MQTT,
