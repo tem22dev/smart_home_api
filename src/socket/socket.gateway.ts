@@ -60,4 +60,38 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       client.emit('error', { message: 'Failed to update actuator status' });
     }
   }
+
+  @SubscribeMessage('updateSensorConfig')
+  async handleUpdateSensorConfig(
+    client: Socket,
+    payload: { id: string; pin: number; threshold: number; name: string },
+  ) {
+    const { id, pin, threshold, name } = payload;
+
+    try {
+      await this.sensorService.updateSocket(id, { pin, threshold });
+      this.server.emit('sensorConfigUpdate', { id, pin, threshold, name }); // Send update to all client
+      this.logger.log(`Sensor ${id} config updated: pin=${pin}, threshold=${threshold}`);
+    } catch (error) {
+      this.logger.error(`Failed to update sensor ${id} config: ${error.message}`);
+      client.emit('error', { message: 'Failed to update sensor config' });
+    }
+  }
+
+  @SubscribeMessage('updateActuatorConfig')
+  async handleUpdateActuatorConfig(
+    client: Socket,
+    payload: { id: string; pin: number; minAngle: number; maxAngle: number; name: string },
+  ) {
+    const { id, pin, minAngle, maxAngle, name } = payload;
+
+    try {
+      await this.actuatorService.updateSocket(id, { pin, minAngle, maxAngle });
+      this.server.emit('actuatorConfigUpdate', { id, pin, minAngle, maxAngle, name }); // Send update to all client
+      this.logger.log(`Actuator ${id} config updated: pin=${pin}, minAngle=${minAngle}, maxAngle=${maxAngle}`);
+    } catch (error) {
+      this.logger.error(`Failed to update actuator ${id} config: ${error.message}`);
+      client.emit('error', { message: 'Failed to update actuator config' });
+    }
+  }
 }

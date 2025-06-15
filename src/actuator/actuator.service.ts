@@ -87,6 +87,21 @@ export class ActuatorService {
     return { result };
   }
 
+  async updateSocket(id: string, updateActuatorDto: UpdateActuatorDto) {
+    if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
+
+    const result = await this.sensorModel
+      .updateOne(
+        { _id: id },
+        {
+          ...updateActuatorDto,
+        },
+      )
+      .exec();
+
+    return { result };
+  }
+
   async remove(id: string, user: IPayload) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
 
