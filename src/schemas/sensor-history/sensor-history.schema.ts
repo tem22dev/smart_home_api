@@ -24,4 +24,4 @@ export class SensorHistory extends Document {
 
 export const SensorHistorySchema = SchemaFactory.createForClass(SensorHistory);
 
-SensorHistorySchema.index({ deviceId: 1, sensorId: 1, timestamp: -1 });
+SensorHistorySchema.index({ sensorId: 1, timestamp: -1 });
