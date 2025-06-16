@@ -138,7 +138,6 @@ export class UserService {
     if (userUpdate.email === adminEmail && user.email === adminEmail && updateUserDto.active === false) {
       throw new BadRequestException('You cannot change the admin user active status');
     }
-    console.log('updateUserDto', updateUserDto);
 
     const result = await this.userModel.updateOne(
       { _id: id },

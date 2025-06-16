@@ -14,8 +14,8 @@ export class AuthController {
   @Post('login')
   @UseGuards(LocalAuthGuard)
   @ResponseMessage('Logged in successfully')
-  login(@ReqUser() user: IUserFull, @Res({ passthrough: true }) response: Response) {
-    return this.authService.jwtLogin(user, response);
+  login(@ReqUser() user: IUserFull, @Res({ passthrough: true }) response: Response, @Req() req: Request) {
+    return this.authService.jwtLogin(user, response, req);
   }
 
   @Get('check')

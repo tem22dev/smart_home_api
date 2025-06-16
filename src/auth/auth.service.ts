@@ -7,6 +7,7 @@ import ms from 'ms';
 import { IUserFull, UserService } from '@/shared/user';
 import { isValidPassword } from '@/shared/user/user.util';
 import { IPayload } from './auth.interface';
+import { AccessLogService } from '@/access-log';
 
 @Injectable()
 export class AuthService {
@@ -14,9 +15,10 @@ export class AuthService {
     private jwtService: JwtService,
     private userService: UserService,
     private configService: ConfigService,
+    private accessLogService: AccessLogService,
   ) {}
 
-  async jwtLogin(user: IUserFull, response: Response) {
+  async jwtLogin(user: IUserFull, response: Response, req: Request) {
     const { _id, fullName, email, phone, roles, tokenVersion } = user;
     const payload = {
       sub: 'token login',
@@ -37,6 +39,11 @@ export class AuthService {
       httpOnly: true,
       maxAge: ms(this.configService.get<string>('JWT_REFRESH_EXPIRATION') as ms.StringValue),
     });
+
+    // Access log
+    const ipAddress = req.ip || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    this.accessLogService.logAccess(_id, ipAddress, userAgent);
 
     const { password, refreshToken, ...safeUser } = user;
 

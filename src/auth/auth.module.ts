@@ -6,10 +6,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import ms from 'ms';
 
 import { JwtStrategy, LocalStrategy } from './strategies';
+import { AccessLogModule } from '@/access-log';
 
 @Module({
   imports: [
     UserModule,
+    AccessLogModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

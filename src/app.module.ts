@@ -21,6 +21,7 @@ import { SensorModule } from './sensor';
 import { ActuatorModule } from './actuator';
 import { SensorHistoryModule } from './sensor-history';
 import { SocketModule } from './socket/socket.module';
+import { AccessLogModule } from './access-log';
 @Module({
   imports: [
     // https://github.com/iamolegga/nestjs-pino
@@ -72,6 +73,7 @@ import { SocketModule } from './socket/socket.module';
     SensorModule,
     ActuatorModule,
     SensorHistoryModule,
+    AccessLogModule,
   ],
   providers: [
     {
