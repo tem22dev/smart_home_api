@@ -32,6 +32,12 @@ export class UserController {
     return this.userService.findAll(+currentPage, +limit, qs);
   }
 
+  @Get('count')
+  @ResponseMessage('Retrieved user count successfully')
+  async count(@Query() qs: string) {
+    return await this.userService.count(qs);
+  }
+
   @Get(':id')
   @ResponseMessage('Retrieved user successfully')
   findOne(@Param('id') id: string, @ReqUser() user: IPayload) {

@@ -351,4 +351,10 @@ export class UserService {
   async incrementTokenVersion(userId: string) {
     await this.userModel.updateOne({ _id: userId }, { $inc: { tokenVersion: 1 } });
   }
+
+  async count(qs: string) {
+    const { filter } = aqp(qs);
+    const total = await this.userModel.countDocuments(filter);
+    return { total };
+  }
 }

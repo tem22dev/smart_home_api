@@ -169,4 +169,10 @@ export class DeviceService {
 
     return { result };
   }
+
+  async count(qs: string) {
+    const { filter } = aqp(qs);
+    const total = await this.deviceModel.countDocuments(filter);
+    return { total };
+  }
 }

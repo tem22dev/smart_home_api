@@ -175,4 +175,10 @@ export class SensorService {
 
     return { result };
   }
+
+  async count(qs: string) {
+    const { filter } = aqp(qs);
+    const total = await this.sensorModel.countDocuments(filter);
+    return { total };
+  }
 }

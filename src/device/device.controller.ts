@@ -30,6 +30,12 @@ export class DeviceController {
     return await this.deviceService.findAll(+currentPage, +limit, qs);
   }
 
+  @Get('count')
+  @ResponseMessage('Retrieved devices count successfully')
+  async count(@Query() qs: string) {
+    return await this.deviceService.count(qs);
+  }
+
   @Get(':id')
   @ResponseMessage('Retrieved device successfully')
   async findOne(@Param('id') id: string) {

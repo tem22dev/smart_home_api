@@ -26,6 +26,12 @@ export class SensorController {
     return await this.sensorService.findAll(+currentPage, +limit, qs);
   }
 
+  @Get('count')
+  @ResponseMessage('Retrieved sensor count successfully')
+  async count(@Query() qs: string) {
+    return await this.sensorService.count(qs);
+  }
+
   @Get(':id')
   @ResponseMessage('Retrieved sensor successfully')
   async findOne(@Param('id') id: string) {

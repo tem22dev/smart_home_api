@@ -13,4 +13,10 @@ export class AccessLogController {
   findAll(@Query('page') currentPage: string, @Query('limit') limit: string, @Query() qs: string) {
     return this.accessLogService.findAll(+currentPage, +limit, qs);
   }
+
+  @Get('count')
+  @ResponseMessage('Retrieved access logged count successfully')
+  async count(@Query() qs: string) {
+    return await this.accessLogService.count(qs);
+  }
 }

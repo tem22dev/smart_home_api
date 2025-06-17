@@ -51,4 +51,10 @@ export class AccessLogService {
       },
     };
   }
+
+  async count(qs: string) {
+    const { filter } = aqp(qs);
+    const total = await this.accessLogModel.countDocuments(filter);
+    return { total };
+  }
 }
