@@ -48,22 +48,24 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   private setupMqtt() {
     this.mqttClient.on('connect', () => {
       this.logger.log('Connected to MQTT broker');
-      this.mqttClient.subscribe('sensor/data', (err) => {
-        if (err) {
-          this.logger.error('Failed to subscribe to sensor/data topic:', err);
-        }
+      this.mqttClient.subscribe('request/config', (err) => {
+        if (err) this.logger.error('Failed to subscribe to request/config:', err);
       });
     });
 
     this.mqttClient.on('message', async (topic, message) => {
-      if (topic === 'sensor/data') {
+      if (topic === 'request/config') {
+        const deviceCode = message.toString();
+        const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
+        console.log('config ==> ', config);
+        this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config));
+        this.logger.log(`Sent config to ${deviceCode}`);
+      } else if (topic === 'sensor/data') {
         try {
           const payload = JSON.parse(message.toString());
           const { sensorId, value, unit } = payload;
-
           if (sensorId && value !== undefined && unit) {
             const newHistory = await this.sensorHistoryService.handleMqttData(sensorId, value, unit);
-
             this.server.emit('sensorHistoryUpdate', {
               id: newHistory.result._id,
               sensorId: newHistory.result.sensorId,
@@ -98,6 +100,37 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
   }
 
+  @SubscribeMessage('updateSensorConfig')
+  async handleUpdateSensorConfig(
+    client: Socket,
+    payload: { id: string; pin: number; threshold: number; name: string },
+  ) {
+    const { id, pin, threshold, name } = payload;
+    try {
+      await this.sensorService.updateSocket(id, { pin, threshold });
+      this.server.emit('sensorConfigUpdate', { id, pin, threshold, name });
+      const device = await this.sensorService.findOne(id);
+      let deviceCode: string | undefined;
+      // Check if deviceId is populated and has deviceCode
+      if (
+        device.result.deviceId &&
+        typeof device.result.deviceId === 'object' &&
+        'deviceCode' in device.result.deviceId
+      ) {
+        deviceCode = (device.result.deviceId as { deviceCode: string }).deviceCode;
+      }
+
+      if (deviceCode) {
+        const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
+        this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config));
+      }
+      this.logger.log(`Sensor ${id} config updated: pin=${pin}, threshold=${threshold}`);
+    } catch (error) {
+      this.logger.error(`Failed to update sensor ${id} config: ${error.message}`);
+      client.emit('error', { message: 'Failed to update sensor config' });
+    }
+  }
+
   @SubscribeMessage('updateActuatorStatus')
   async handleUpdateActuatorStatus(client: Socket, payload: { id: string; status: boolean; name: string }) {
     const { id, status, name } = payload;
@@ -109,23 +142,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     } catch (error) {
       this.logger.error(`Failed to update actuator ${id} status: ${error.message}`);
       client.emit('error', { message: 'Failed to update actuator status' });
-    }
-  }
-
-  @SubscribeMessage('updateSensorConfig')
-  async handleUpdateSensorConfig(
-    client: Socket,
-    payload: { id: string; pin: number; threshold: number; name: string },
-  ) {
-    const { id, pin, threshold, name } = payload;
-
-    try {
-      await this.sensorService.updateSocket(id, { pin, threshold });
-      this.server.emit('sensorConfigUpdate', { id, pin, threshold, name }); // Send update to all client
-      this.logger.log(`Sensor ${id} config updated: pin=${pin}, threshold=${threshold}`);
-    } catch (error) {
-      this.logger.error(`Failed to update sensor ${id} config: ${error.message}`);
-      client.emit('error', { message: 'Failed to update sensor config' });
     }
   }
 

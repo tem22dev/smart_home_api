@@ -7,10 +7,14 @@ import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import aqp from 'api-query-params';
 import mongoose from 'mongoose';
 import { parse } from 'qs';
+import { DeviceService } from '@/device';
 
 @Injectable()
 export class SensorService {
-  constructor(@InjectModel(Sensor.name) private sensorModel: SoftDeleteModel<SensorDocument>) {}
+  constructor(
+    @InjectModel(Sensor.name) private sensorModel: SoftDeleteModel<SensorDocument>,
+    private readonly deviceService: DeviceService,
+  ) {}
 
   async create(createSensorDto: CreateSensorDto, user: IPayload) {
     const result = await this.sensorModel.create({
@@ -180,5 +184,34 @@ export class SensorService {
     const { filter } = aqp(qs);
     const total = await this.sensorModel.countDocuments(filter);
     return { total };
+  }
+
+  async getSensorsByDeviceCode(deviceCode: string) {
+    // Tìm device dựa trên deviceCode
+    const device = await this.deviceService.findByDeviceCode(deviceCode);
+    if (!device) {
+      throw new NotFoundException(`Device with code ${deviceCode} not found`);
+    }
+
+    // Lấy tất cả sensor liên kết với deviceId
+    const idDevice = (device.result as { _id: mongoose.Types.ObjectId })._id.toString();
+    const sensors = await this.sensorModel.find({ deviceId: idDevice }).populate('deviceId', 'deviceCode').exec();
+    console.log('sensors', sensors);
+
+    // Chuyển đổi thành cấu hình cho MQTT
+    const config = {
+      deviceCode,
+      sensors: sensors.map((sensor) => ({
+        id: (sensor._id as mongoose.Types.ObjectId).toString(),
+        name: sensor.name,
+        pin: sensor.pin,
+        type: sensor.type,
+        unit: sensor.unit || '',
+        threshold: sensor.threshold || 0,
+        status: sensor.status || false,
+      })),
+    };
+
+    return config;
   }
 }

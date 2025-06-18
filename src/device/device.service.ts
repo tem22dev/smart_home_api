@@ -175,4 +175,12 @@ export class DeviceService {
     const total = await this.deviceModel.countDocuments(filter);
     return { total };
   }
+
+  async findByDeviceCode(deviceCode: string) {
+    const result = await this.deviceModel.findOne({ deviceCode }).exec();
+
+    if (!result) throw new NotFoundException('Device not found');
+
+    return { result };
+  }
 }
