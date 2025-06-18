@@ -34,6 +34,10 @@ export class SensorService {
     delete filter.page;
     delete filter.limit;
 
+    if (filter.deviceId && typeof filter.deviceId === 'object' && filter.deviceId.value) {
+      filter.deviceId = filter.deviceId.value;
+    }
+
     let offset = (+currentPage - 1) * +limit;
     let defaultLimit = +limit ? +limit : 10;
 
@@ -75,18 +79,28 @@ export class SensorService {
   async update(id: string, updateSensorDto: UpdateSensorDto, user: IPayload) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
 
+    const existingSensor = await this.sensorModel.findById(id).exec();
+    if (!existingSensor) throw new NotFoundException('Sensor not found');
+
+    const updatedData = {
+      ...updateSensorDto,
+      deviceId:
+        typeof updateSensorDto.deviceId === 'object' &&
+        updateSensorDto.deviceId !== null &&
+        'value' in updateSensorDto.deviceId
+          ? (updateSensorDto.deviceId as { value: string }).value
+          : updateSensorDto.deviceId || existingSensor.deviceId,
+      updatedBy: {
+        _id: user._id,
+        email: user.email,
+      },
+    };
+
     const result = await this.sensorModel
-      .updateOne(
-        { _id: id },
-        {
-          ...updateSensorDto,
-          updatedBy: {
-            _id: user._id,
-            email: user.email,
-          },
-        },
-      )
+      .findByIdAndUpdate(id, { $set: updatedData }, { new: true, runValidators: true })
       .exec();
+
+    if (!result) throw new NotFoundException('Sensor not found');
 
     return { result };
   }
@@ -187,18 +201,14 @@ export class SensorService {
   }
 
   async getSensorsByDeviceCode(deviceCode: string) {
-    // Tìm device dựa trên deviceCode
     const device = await this.deviceService.findByDeviceCode(deviceCode);
     if (!device) {
       throw new NotFoundException(`Device with code ${deviceCode} not found`);
     }
 
-    // Lấy tất cả sensor liên kết với deviceId
     const idDevice = (device.result as { _id: mongoose.Types.ObjectId })._id.toString();
     const sensors = await this.sensorModel.find({ deviceId: idDevice }).populate('deviceId', 'deviceCode').exec();
-    console.log('sensors', sensors);
 
-    // Chuyển đổi thành cấu hình cho MQTT
     const config = {
       deviceCode,
       sensors: sensors.map((sensor) => ({
