@@ -22,7 +22,7 @@ export class SensorHistoryService {
       .find({ sensorId })
       .populate({
         path: 'sensorId',
-        select: { name: 1 },
+        select: { name: 1, type: 1 },
       })
       .sort({ createdAt: -1 })
       .exec();
