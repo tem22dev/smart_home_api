@@ -51,6 +51,9 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       this.mqttClient.subscribe('request/config', (err) => {
         if (err) this.logger.error('Failed to subscribe to request/config:', err);
       });
+      this.mqttClient.subscribe('sensor/data', (err) => {
+        if (err) this.logger.error('Failed to subscribe to sensor/data:', err);
+      });
     });
 
     this.mqttClient.on('message', async (topic, message) => {
