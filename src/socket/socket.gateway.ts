@@ -65,7 +65,15 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       if (topic === 'request/config') {
         const deviceCode = message.toString();
         const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
-        this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config));
+        console.log('config ==> ', config);
+
+        this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config), (err) => {
+          if (err) {
+            this.logger.error(`Failed to publish config to config/${deviceCode}: ${err.message}`);
+          } else {
+            this.logger.log(`Successfully published config to config/${deviceCode}`);
+          }
+        });
         this.logger.log(`Sent config to ${deviceCode}`);
       } else if (topic === 'sensor/data') {
         try {
@@ -123,7 +131,15 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
       await this.sensorService.updateStatus(id, status);
       this.server.emit('sensorStatusUpdate', { id, status, name });
-      this.logger.log(`Sensor ${id} status updated to ${status}`);
+      // Gửi cập nhật trạng thái sensor qua MQTT
+      const payloadMqtt = { status };
+      this.mqttClient.publish(`sensor/status/${id}`, JSON.stringify(payloadMqtt), { qos: 1 }, (err) => {
+        if (err) {
+          this.logger.error(`Failed to publish sensor status to sensor/status/${id}: ${err.message}`);
+        } else {
+          this.logger.log(`Successfully published sensor ${id} status ${status} to topic sensor/status/${id}`);
+        }
+      });
     } catch (error) {
       this.logger.error(`Failed to update sensor ${id} status: ${error.message}`);
       client.emit('error', { message: error.message });

@@ -210,13 +210,13 @@ export class SensorService {
     const sensors = await this.sensorModel.find({ deviceId: idDevice }).populate('deviceId', 'deviceCode').exec();
 
     const config = {
-      deviceCode,
+      // deviceCode,
       sensors: sensors.map((sensor) => ({
         id: (sensor._id as mongoose.Types.ObjectId).toString(),
         name: sensor.name,
         pin: sensor.pin,
         type: sensor.type,
-        unit: sensor.unit || '',
+        unit: sensor.unit,
         threshold: sensor.threshold || 0,
         status: sensor.status || false,
       })),
