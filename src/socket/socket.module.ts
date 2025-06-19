@@ -3,9 +3,10 @@ import { SocketGateway } from './socket.gateway';
 import { SensorModule } from '@/sensor';
 import { ActuatorModule } from '@/actuator';
 import { SensorHistoryModule } from '@/sensor-history';
+import { DeviceModule } from '@/device';
 
 @Module({
-  imports: [SensorModule, ActuatorModule, SensorHistoryModule],
+  imports: [SensorModule, ActuatorModule, DeviceModule, SensorHistoryModule],
   providers: [SocketGateway],
   exports: [SocketGateway],
 })

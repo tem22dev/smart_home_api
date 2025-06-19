@@ -10,6 +10,7 @@ import { Logger } from '@nestjs/common';
 import { Socket, Server } from 'socket.io';
 import { SensorService } from '@/sensor';
 import { ActuatorService } from '@/actuator';
+import { DeviceService } from '@/device';
 import mqtt from 'mqtt';
 import { SensorHistoryService } from '@/sensor-history';
 
@@ -22,6 +23,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   constructor(
     private readonly sensorService: SensorService,
     private readonly actuatorService: ActuatorService,
+    private readonly deviceService: DeviceService,
     private readonly sensorHistoryService: SensorHistoryService,
   ) {
     // Init MQTT client
@@ -60,7 +62,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       if (topic === 'request/config') {
         const deviceCode = message.toString();
         const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
-        console.log('config ==> ', config);
         this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config));
         this.logger.log(`Sent config to ${deviceCode}`);
       } else if (topic === 'sensor/data') {
@@ -92,14 +93,39 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   @SubscribeMessage('updateSensorStatus')
   async handleUpdateSensorStatus(client: Socket, payload: { id: string; status: boolean; name: string }) {
     const { id, status, name } = payload;
-
     try {
       await this.sensorService.updateStatus(id, status);
-      this.server.emit('sensorStatusUpdate', { id, status, name }); // Send update to all client
+      this.server.emit('sensorStatusUpdate', { id, status, name });
       this.logger.log(`Sensor ${id} status updated to ${status}`);
     } catch (error) {
       this.logger.error(`Failed to update sensor ${id} status: ${error.message}`);
       client.emit('error', { message: 'Failed to update sensor status' });
+    }
+  }
+
+  @SubscribeMessage('updateActuatorStatus')
+  async handleUpdateActuatorStatus(client: Socket, payload: { id: string; status: boolean; name: string }) {
+    const { id, status, name } = payload;
+    try {
+      await this.actuatorService.updateStatus(id, status);
+      this.server.emit('actuatorStatusUpdate', { id, status, name });
+      this.logger.log(`Actuator ${id} status updated to ${status}`);
+    } catch (error) {
+      this.logger.error(`Failed to update actuator ${id} status: ${error.message}`);
+      client.emit('error', { message: 'Failed to update actuator status' });
+    }
+  }
+
+  @SubscribeMessage('updateDeviceStatus')
+  async handleUpdateDeviceStatus(client: Socket, payload: { id: string; status: boolean; name: string }) {
+    const { id, status, name } = payload;
+    try {
+      await this.deviceService.updateStatus(id, status);
+      this.server.emit('deviceStatusUpdate', { id, status, name });
+      this.logger.log(`Device ${id} status updated to ${status}`);
+    } catch (error) {
+      this.logger.error(`Failed to update device ${id} status: ${error.message}`);
+      client.emit('error', { message: 'Failed to update device status' });
     }
   }
 
@@ -114,7 +140,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       this.server.emit('sensorConfigUpdate', { id, pin, threshold, name });
       const device = await this.sensorService.findOne(id);
       let deviceCode: string | undefined;
-      // Check if deviceId is populated and has deviceCode
       if (
         device.result.deviceId &&
         typeof device.result.deviceId === 'object' &&
@@ -122,7 +147,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       ) {
         deviceCode = (device.result.deviceId as { deviceCode: string }).deviceCode;
       }
-
       if (deviceCode) {
         const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
         this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config));
@@ -134,30 +158,15 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
   }
 
-  @SubscribeMessage('updateActuatorStatus')
-  async handleUpdateActuatorStatus(client: Socket, payload: { id: string; status: boolean; name: string }) {
-    const { id, status, name } = payload;
-
-    try {
-      await this.actuatorService.updateStatus(id, status);
-      this.server.emit('actuatorStatusUpdate', { id, status, name }); // Send update to all client
-      this.logger.log(`actuator ${id} status updated to ${status}`);
-    } catch (error) {
-      this.logger.error(`Failed to update actuator ${id} status: ${error.message}`);
-      client.emit('error', { message: 'Failed to update actuator status' });
-    }
-  }
-
   @SubscribeMessage('updateActuatorConfig')
   async handleUpdateActuatorConfig(
     client: Socket,
     payload: { id: string; pin: number; minAngle: number; maxAngle: number; name: string },
   ) {
     const { id, pin, minAngle, maxAngle, name } = payload;
-
     try {
       await this.actuatorService.updateSocket(id, { pin, minAngle, maxAngle });
-      this.server.emit('actuatorConfigUpdate', { id, pin, minAngle, maxAngle, name }); // Send update to all client
+      this.server.emit('actuatorConfigUpdate', { id, pin, minAngle, maxAngle, name });
       this.logger.log(`Actuator ${id} config updated: pin=${pin}, minAngle=${minAngle}, maxAngle=${maxAngle}`);
     } catch (error) {
       this.logger.error(`Failed to update actuator ${id} config: ${error.message}`);
