@@ -56,6 +56,9 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       this.mqttClient.subscribe('sensor/data', (err) => {
         if (err) this.logger.error('Failed to subscribe to sensor/data:', err);
       });
+      this.mqttClient.subscribe('status/#', (err) => {
+        if (err) this.logger.error('Failed to subscribe to status/#:', err);
+      }); // Đăng ký nhận yêu cầu trạng thái
     });
 
     this.mqttClient.on('message', async (topic, message) => {
@@ -82,6 +85,20 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         } catch (error) {
           this.logger.error('Failed to process MQTT message:', error);
         }
+      } else if (topic.startsWith('status/') && message.length === 0) {
+        // Xử lý yêu cầu trạng thái từ ESP32
+        const deviceCode = topic.replace('status/', '');
+        const device = await this.deviceService.findByDeviceCode(deviceCode);
+        if (device.result) {
+          const payload = { status: device.result.status };
+          this.mqttClient.publish(`status/${deviceCode}`, JSON.stringify(payload), { qos: 1 }, (err) => {
+            if (err) {
+              this.logger.error(`Failed to publish status to ${deviceCode}: ${err.message}`);
+            } else {
+              this.logger.log(`Sent current status ${device.result.status} to topic status/${deviceCode}`);
+            }
+          });
+        }
       }
     });
 
@@ -94,12 +111,22 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   async handleUpdateSensorStatus(client: Socket, payload: { id: string; status: boolean; name: string }) {
     const { id, status, name } = payload;
     try {
+      const sensor = await this.sensorService.findOne(id);
+      if (!sensor.result || !sensor.result.deviceId) {
+        throw new Error('Sensor not found or no associated device');
+      }
+      const deviceId = (sensor.result.deviceId as any)._id || sensor.result.deviceId;
+      const device = await this.deviceService.findOne(deviceId.toString());
+      if (!device.result || !device.result.status) {
+        throw new Error('Device is disabled, cannot update sensor status');
+      }
+
       await this.sensorService.updateStatus(id, status);
       this.server.emit('sensorStatusUpdate', { id, status, name });
       this.logger.log(`Sensor ${id} status updated to ${status}`);
     } catch (error) {
       this.logger.error(`Failed to update sensor ${id} status: ${error.message}`);
-      client.emit('error', { message: 'Failed to update sensor status' });
+      client.emit('error', { message: error.message });
     }
   }
 
@@ -107,12 +134,22 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   async handleUpdateActuatorStatus(client: Socket, payload: { id: string; status: boolean; name: string }) {
     const { id, status, name } = payload;
     try {
+      const actuator = await this.actuatorService.findOne(id);
+      if (!actuator.result || !actuator.result.deviceId) {
+        throw new Error('Actuator not found or no associated device');
+      }
+      const deviceId = (actuator.result.deviceId as any)._id || actuator.result.deviceId;
+      const device = await this.deviceService.findOne(deviceId.toString());
+      if (!device.result || !device.result.status) {
+        throw new Error('Device is disabled, cannot update actuator status');
+      }
+
       await this.actuatorService.updateStatus(id, status);
       this.server.emit('actuatorStatusUpdate', { id, status, name });
       this.logger.log(`Actuator ${id} status updated to ${status}`);
     } catch (error) {
       this.logger.error(`Failed to update actuator ${id} status: ${error.message}`);
-      client.emit('error', { message: 'Failed to update actuator status' });
+      client.emit('error', { message: error.message });
     }
   }
 
@@ -120,12 +157,29 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   async handleUpdateDeviceStatus(client: Socket, payload: { id: string; status: boolean; name: string }) {
     const { id, status, name } = payload;
     try {
-      await this.deviceService.updateStatus(id, status);
-      this.server.emit('deviceStatusUpdate', { id, status, name });
-      this.logger.log(`Device ${id} status updated to ${status}`);
+      const device = await this.deviceService.findOne(id);
+      if (!device.result) {
+        throw new Error('Device not found');
+      }
+      const deviceCode = device.result.deviceCode;
+      const currentDevice = await this.deviceService.findOne(id);
+      if (currentDevice.result.status !== status) {
+        await this.deviceService.updateStatus(id, status);
+        this.server.emit('deviceStatusUpdate', { id, status, name });
+        const payload = { status };
+        this.mqttClient.publish(`status/${deviceCode}`, JSON.stringify(payload), { qos: 1 }, (err) => {
+          if (err) {
+            this.logger.error(`Failed to publish status to ${deviceCode}: ${err.message}`);
+          } else {
+            this.logger.log(`Successfully published status ${status} to topic status/${deviceCode}`);
+          }
+        });
+      } else {
+        this.logger.log(`Device ${id} status is already ${status}, no update needed`);
+      }
     } catch (error) {
       this.logger.error(`Failed to update device ${id} status: ${error.message}`);
-      client.emit('error', { message: 'Failed to update device status' });
+      client.emit('error', { message: error.message });
     }
   }
 
@@ -136,16 +190,26 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   ) {
     const { id, pin, threshold, name } = payload;
     try {
+      const sensor = await this.sensorService.findOne(id);
+      if (!sensor.result || !sensor.result.deviceId) {
+        throw new Error('Sensor not found or no associated device');
+      }
+      const deviceId = (sensor.result.deviceId as any)._id || sensor.result.deviceId;
+      const device = await this.deviceService.findOne(deviceId.toString());
+      if (!device.result || !device.result.status) {
+        throw new Error('Device is disabled, cannot update sensor config');
+      }
+
       await this.sensorService.updateSocket(id, { pin, threshold });
       this.server.emit('sensorConfigUpdate', { id, pin, threshold, name });
-      const device = await this.sensorService.findOne(id);
+      const sensorDevice = await this.sensorService.findOne(id);
       let deviceCode: string | undefined;
       if (
-        device.result.deviceId &&
-        typeof device.result.deviceId === 'object' &&
-        'deviceCode' in device.result.deviceId
+        sensorDevice.result.deviceId &&
+        typeof sensorDevice.result.deviceId === 'object' &&
+        'deviceCode' in sensorDevice.result.deviceId
       ) {
-        deviceCode = (device.result.deviceId as { deviceCode: string }).deviceCode;
+        deviceCode = (sensorDevice.result.deviceId as { deviceCode: string }).deviceCode;
       }
       if (deviceCode) {
         const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
@@ -154,7 +218,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       this.logger.log(`Sensor ${id} config updated: pin=${pin}, threshold=${threshold}`);
     } catch (error) {
       this.logger.error(`Failed to update sensor ${id} config: ${error.message}`);
-      client.emit('error', { message: 'Failed to update sensor config' });
+      client.emit('error', { message: error.message });
     }
   }
 
@@ -165,12 +229,22 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   ) {
     const { id, pin, minAngle, maxAngle, name } = payload;
     try {
+      const actuator = await this.actuatorService.findOne(id);
+      if (!actuator.result || !actuator.result.deviceId) {
+        throw new Error('Actuator not found or no associated device');
+      }
+      const deviceId = (actuator.result.deviceId as any)._id || actuator.result.deviceId;
+      const device = await this.deviceService.findOne(deviceId.toString());
+      if (!device.result || !device.result.status) {
+        throw new Error('Device is disabled, cannot update actuator config');
+      }
+
       await this.actuatorService.updateSocket(id, { pin, minAngle, maxAngle });
       this.server.emit('actuatorConfigUpdate', { id, pin, minAngle, maxAngle, name });
       this.logger.log(`Actuator ${id} config updated: pin=${pin}, minAngle=${minAngle}, maxAngle=${maxAngle}`);
     } catch (error) {
       this.logger.error(`Failed to update actuator ${id} config: ${error.message}`);
-      client.emit('error', { message: 'Failed to update actuator config' });
+      client.emit('error', { message: error.message });
     }
   }
 
