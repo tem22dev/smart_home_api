@@ -50,13 +50,13 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   private setupMqtt() {
     this.mqttClient.on('connect', () => {
       this.logger.log('Connected to MQTT broker');
-      this.mqttClient.subscribe('request/config', (err) => {
+      this.mqttClient.subscribe('request/config', { qos: 1 }, (err) => {
         if (err) this.logger.error('Failed to subscribe to request/config:', err);
       });
-      this.mqttClient.subscribe('sensor/data', (err) => {
+      this.mqttClient.subscribe('sensor/data', { qos: 1 }, (err) => {
         if (err) this.logger.error('Failed to subscribe to sensor/data:', err);
       });
-      this.mqttClient.subscribe('status/#', (err) => {
+      this.mqttClient.subscribe('status/#', { qos: 1 }, (err) => {
         if (err) this.logger.error('Failed to subscribe to status/#:', err);
       }); // Đăng ký nhận yêu cầu trạng thái
     });
@@ -67,7 +67,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
         console.log('config ==> ', config);
 
-        this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config), (err) => {
+        this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config), { qos: 1 }, (err) => {
           if (err) {
             this.logger.error(`Failed to publish config to config/${deviceCode}: ${err.message}`);
           } else {
@@ -113,6 +113,13 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.mqttClient.on('error', (error) => {
       this.logger.error('MQTT error:', error);
     });
+  }
+
+  @SubscribeMessage('requestReloadConfig')
+  async handleRequestReloadConfig(client: Socket, payload: { deviceCode: string }) {
+    const { deviceCode } = payload;
+    this.logger.log(`Received request to reload config for device: ${deviceCode}`);
+    this.mqttClient.publish('request/config', deviceCode, { qos: 1 }, async (err) => {});
   }
 
   @SubscribeMessage('updateSensorStatus')
