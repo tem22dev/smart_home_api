@@ -32,7 +32,7 @@ import { AccessLogModule } from './access-log';
       throttlers: [
         {
           ttl: 60000,
-          limit: 10,
+          limit: 50,
         },
       ],
     }),
