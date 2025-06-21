@@ -126,6 +126,7 @@ export class SensorService {
     await this.sensorModel.updateOne(
       { _id: id },
       {
+        status: false,
         deletedBy: {
           _id: user._id,
           email: user.email,

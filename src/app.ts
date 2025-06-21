@@ -19,19 +19,6 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.MQTT,
-    options: {
-      url: 'mqtt://localhost:1883',
-      clientId: 'nestjs-mqtt',
-      reconnectPeriod: 1000,
-      keepalive: 60,
-    },
-  });
-
-  // Start microservice
-  await app.startAllMicroservices();
-
   const reflector = app.get(Reflector);
   const NestLogger = app.get(Logger);
 
