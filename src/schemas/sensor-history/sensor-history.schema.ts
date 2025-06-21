@@ -12,7 +12,7 @@ export class SensorHistory extends Document {
   @Prop({ type: mongoose.Schema.Types.Mixed, required: true })
   value: any;
 
-  @Prop({ required: true })
+  @Prop()
   unit: string;
 
   @Prop()

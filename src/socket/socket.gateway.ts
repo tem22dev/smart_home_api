@@ -58,23 +58,54 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       });
       this.mqttClient.subscribe('status/#', { qos: 1 }, (err) => {
         if (err) this.logger.error('Failed to subscribe to status/#:', err);
-      }); // Đăng ký nhận yêu cầu trạng thái
+      });
+      this.mqttClient.subscribe('actuator/status/#', { qos: 1 }, (err) => {
+        if (err) this.logger.error('Failed to subscribe to actuator/status/#:', err);
+      });
     });
 
     this.mqttClient.on('message', async (topic, message) => {
       if (topic === 'request/config') {
         const deviceCode = message.toString();
-        const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
-        console.log('config ==> ', config);
-
-        this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config), { qos: 1 }, (err) => {
-          if (err) {
-            this.logger.error(`Failed to publish config to config/${deviceCode}: ${err.message}`);
-          } else {
-            this.logger.log(`Successfully published config to config/${deviceCode}`);
+        try {
+          // Lấy thông tin device từ database
+          const device = await this.deviceService.findByDeviceCode(deviceCode);
+          if (!device.result) {
+            this.logger.error(`Device with code ${deviceCode} not found`);
+            return;
           }
-        });
-        this.logger.log(`Sent config to ${deviceCode}`);
+
+          const deviceType = device.result.deviceType; // Lấy loại thiết bị (sensor hoặc actuator)
+          let config: any;
+
+          if (deviceType === 'sensor') {
+            const sensorConfig = await this.sensorService.getSensorsByDeviceCode(deviceCode);
+            config = {
+              sensors: sensorConfig.sensors || [],
+            };
+          } else if (deviceType === 'actuator') {
+            const actuatorConfig = await this.actuatorService.getActuatorsByDeviceCode(deviceCode);
+            config = {
+              actuators: actuatorConfig.actuators || [],
+            };
+          } else {
+            this.logger.error(`Unknown device type for ${deviceCode}: ${deviceType}`);
+            return;
+          }
+
+          console.log('Config sent ==> ', config);
+
+          this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config), { qos: 1 }, (err) => {
+            if (err) {
+              this.logger.error(`Failed to publish config to config/${deviceCode}: ${err.message}`);
+            } else {
+              this.logger.log(`Successfully published config to config/${deviceCode}`);
+            }
+          });
+          this.logger.log(`Sent config to ${deviceCode}`);
+        } catch (error) {
+          this.logger.error(`Failed to fetch config for ${deviceCode}: ${error.message}`);
+        }
       } else if (topic === 'sensor/data') {
         try {
           const payload = JSON.parse(message.toString());
@@ -94,7 +125,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
           this.logger.error('Failed to process MQTT message:', error);
         }
       } else if (topic.startsWith('status/') && message.length === 0) {
-        // Xử lý yêu cầu trạng thái từ ESP32
         const deviceCode = topic.replace('status/', '');
         const device = await this.deviceService.findByDeviceCode(deviceCode);
         if (device.result) {
@@ -106,6 +136,16 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
               this.logger.log(`Sent current status ${device.result.status} to topic status/${deviceCode}`);
             }
           });
+        }
+      } else if (topic.startsWith('actuator/status/')) {
+        const actuatorId = topic.replace('actuator/status/', '');
+        try {
+          const payload = JSON.parse(message.toString());
+          const { status } = payload;
+          this.server.emit('actuatorStatusUpdate', { id: actuatorId, status });
+          this.logger.log(`Received actuator ${actuatorId} status update: ${status}`);
+        } catch (error) {
+          this.logger.error(`Failed to process actuator status for ${actuatorId}: ${error.message}`);
         }
       }
     });
@@ -138,7 +178,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
       await this.sensorService.updateStatus(id, status);
       this.server.emit('sensorStatusUpdate', { id, status, name });
-      // Gửi cập nhật trạng thái sensor qua MQTT
       const payloadMqtt = { status };
       this.mqttClient.publish(`sensor/status/${id}`, JSON.stringify(payloadMqtt), { qos: 1 }, (err) => {
         if (err) {
@@ -169,7 +208,14 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
       await this.actuatorService.updateStatus(id, status);
       this.server.emit('actuatorStatusUpdate', { id, status, name });
-      this.logger.log(`Actuator ${id} status updated to ${status}`);
+      const payloadMqtt = { status };
+      this.mqttClient.publish(`actuator/status/${id}`, JSON.stringify(payloadMqtt), { qos: 1 }, (err) => {
+        if (err) {
+          this.logger.error(`Failed to publish actuator status to actuator/status/${id}: ${err.message}`);
+        } else {
+          this.logger.log(`Successfully published actuator ${id} status ${status} to topic actuator/status/${id}`);
+        }
+      });
     } catch (error) {
       this.logger.error(`Failed to update actuator ${id} status: ${error.message}`);
       client.emit('error', { message: error.message });
@@ -235,7 +281,11 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         deviceCode = (sensorDevice.result.deviceId as { deviceCode: string }).deviceCode;
       }
       if (deviceCode) {
-        const config = await this.sensorService.getSensorsByDeviceCode(deviceCode);
+        const sensorConfig = await this.sensorService.getSensorsByDeviceCode(deviceCode);
+        const config = {
+          deviceCode,
+          sensors: sensorConfig.sensors || [],
+        };
         this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config));
       }
       this.logger.log(`Sensor ${id} config updated: pin=${pin}, threshold=${threshold}`);
@@ -264,6 +314,23 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
       await this.actuatorService.updateSocket(id, { pin, minAngle, maxAngle });
       this.server.emit('actuatorConfigUpdate', { id, pin, minAngle, maxAngle, name });
+      const actuatorDevice = await this.actuatorService.findOne(id);
+      let deviceCode: string | undefined;
+      if (
+        actuatorDevice.result.deviceId &&
+        typeof actuatorDevice.result.deviceId === 'object' &&
+        'deviceCode' in actuatorDevice.result.deviceId
+      ) {
+        deviceCode = (actuatorDevice.result.deviceId as { deviceCode: string }).deviceCode;
+      }
+      if (deviceCode) {
+        const actuatorConfig = await this.actuatorService.getActuatorsByDeviceCode(deviceCode);
+        const config = {
+          deviceCode,
+          actuators: actuatorConfig.actuators || [],
+        };
+        this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config));
+      }
       this.logger.log(`Actuator ${id} config updated: pin=${pin}, minAngle=${minAngle}, maxAngle=${maxAngle}`);
     } catch (error) {
       this.logger.error(`Failed to update actuator ${id} config: ${error.message}`);
