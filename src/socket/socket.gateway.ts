@@ -326,7 +326,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       if (deviceCode) {
         const actuatorConfig = await this.actuatorService.getActuatorsByDeviceCode(deviceCode);
         const config = {
-          deviceCode,
           actuators: actuatorConfig.actuators || [],
         };
         this.mqttClient.publish(`config/${deviceCode}`, JSON.stringify(config));
