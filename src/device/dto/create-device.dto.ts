@@ -9,6 +9,10 @@ export class CreateDeviceDto {
   @IsNotEmpty({ message: 'Mã thiết bị không được để trống' })
   deviceCode: string;
 
+  @IsString({ message: 'Loại thiết bị phải là chuỗi' })
+  @IsNotEmpty({ message: 'Loại thiết bị không được để trống' })
+  deviceType: string;
+
   @IsOptional()
   @IsString({ message: 'Ảnh thiết bị phải là chuỗi' })
   image: string;

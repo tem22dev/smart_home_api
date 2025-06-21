@@ -17,6 +17,9 @@ export class Device extends Document {
   @Prop({ type: Boolean, default: true })
   status: boolean;
 
+  @Prop({ required: true, enum: ['sensor', 'actuator'] })
+  deviceType: string;
+
   @Prop({ type: String })
   description: string;
 
