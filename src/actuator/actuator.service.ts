@@ -76,18 +76,28 @@ export class ActuatorService {
   async update(id: string, updateActuatorDto: UpdateActuatorDto, user: IPayload) {
     if (!mongoose.Types.ObjectId.isValid(id)) throw new BadRequestException('Invalid ID');
 
+    const existingActuator = await this.actuatorModel.findById(id).exec();
+    if (!existingActuator) throw new NotFoundException('Actuator not found');
+
+    const updatedData = {
+      ...updateActuatorDto,
+      deviceId:
+        typeof updateActuatorDto.deviceId === 'object' &&
+        updateActuatorDto.deviceId !== null &&
+        'value' in updateActuatorDto.deviceId
+          ? (updateActuatorDto.deviceId as { value: string }).value
+          : updateActuatorDto.deviceId || existingActuator.deviceId,
+      updatedBy: {
+        _id: user._id,
+        email: user.email,
+      },
+    };
+
     const result = await this.actuatorModel
-      .updateOne(
-        { _id: id },
-        {
-          ...updateActuatorDto,
-          updatedBy: {
-            _id: user._id,
-            email: user.email,
-          },
-        },
-      )
+      .findByIdAndUpdate(id, { $set: updatedData }, { new: true, runValidators: true })
       .exec();
+
+    if (!result) throw new NotFoundException('Actuator not found');
 
     return { result };
   }
